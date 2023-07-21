@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Calcul de Bilan de Liaison</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto py-8">
+      <h1 class="text-3xl font-bold mb-4">Calcul de Bilan de Liaison</h1>
+      <div class="mb-4">
+        <label for="equipment" class="font-bold">Choisir un équipement :</label>
+        <select id="equipment" class="block w-full bg-white border border-gray-300 py-2 px-3 mt-1 rounded-md focus:outline-none focus:ring focus:border-blue-300">
+          <!-- Options des équipements seront ajoutées ici par JavaScript -->
+        </select>
+      </div>
+      <div class="mb-4">
+        <label for="emissionPower" class="font-bold">Puissance d'émission (dBm) :</label>
+        <input type="number" step="0.1" id="emissionPower" required class="block w-full bg-white border border-gray-300 py-2 px-3 mt-1 rounded-md focus:outline-none focus:ring focus:border-blue-300">
+      </div>
+      <div class="mb-4">
+        <label for="fiberLength" class="font-bold">Longueur de la fibre (km) :</label>
+        <input type="number" step="0.1" id="fiberLength" required class="block w-full bg-white border border-gray-300 py-2 px-3 mt-1 rounded-md focus:outline-none focus:ring focus:border-blue-300">
+      </div>
+      <div class="mb-4">
+        <label for="attenuation" class="font-bold">Atténuation de la fibre (dB/km) :</label>
+        <input type="number" step="0.01" id="attenuation" required class="block w-full bg-white border border-gray-300 py-2 px-3 mt-1 rounded-md focus:outline-none focus:ring focus:border-blue-300">
+      </div>
+      <div>
+        <button id="calculateBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+          Calculer
+        </button>
+      </div>
+      <div id="result" class="mt-8">
+        <!-- Le résultat sera affiché ici -->
+      </div>
+    </div>
+
+  <script>
+    // Récupérer la liste des équipements disponibles depuis le backend
+    async function fetchEquipments() {
+      const response = await fetch('/api/equipments');
+      const equipments = await response.json();
+
+      const equipmentSelect = document.getElementById('equipment');
+      equipments.forEach(equipment => {
+        const option = document.createElement('option');
+        option.value = equipment.id;
+        option.textContent = equipment.name;
+        equipmentSelect.appendChild(option);
+      });
+    }
+
+    // Fonction pour effectuer le calcul et afficher les résultats
+    async function calculate() {
+      const equipmentId = document.getElementById('equipment').value;
+      const emissionPower = parseFloat(document.getElementById('emissionPower').value);
+      const fiberLength = parseFloat(document.getElementById('fiberLength').value);
+      const attenuation = parseFloat(document.getElementById('attenuation').value);
+
+      const data = {
+        equipmentId,
+        emissionPower,
+        fiberLength,
+        attenuation,
+      };
+
+      try {
+        const response = await fetch('/api/calculate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = `
+          <h2>Résultats</h2>
+          <p>Puissance reçue : ${result.receivedPower} dBm</p>
+          <p>${result.analysis}</p>
+        `;
+      } catch (error) {
+        console.error('Erreur lors de la requête :', error);
+      }
+    }
+
+    // Appeler la fonction pour récupérer la liste des équipements au chargement de la page
+    fetchEquipments();
+
+    // Ajouter un événement au bouton "Calculer" pour effectuer le calcul
+    const calculateBtn = document.getElementById('calculateBtn');
+    calculateBtn.addEventListener('click', calculate);
+  </script>
+</body>
+</html>
